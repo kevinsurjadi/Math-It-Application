@@ -8,6 +8,7 @@ import android.os.CountDownTimer;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,9 +25,12 @@ public class StartActivity extends AppCompatActivity {
     private Button answer3;
     private Button answer4;
     private TextView countDownText;
+    private EditText answerText;
+    private Button submit;
+    private ImageButton back;
 
     private CountDownTimer countDownTimer;
-    private long timeLeftInMilliseconds = 16000; // 60seconds
+    private long timeLeftInMilliseconds = 0;; // 60seconds
     int points = 0;
     int answer = 0;
     int correct = 0;
@@ -43,16 +47,32 @@ public class StartActivity extends AppCompatActivity {
         score = (TextView) findViewById(R.id.score);
         countDownText = (TextView) findViewById(R.id.timer);
         question = (TextView) findViewById(R.id.operator);
+        submit = (Button) findViewById(R.id.next);
+
+        answerText = (EditText) findViewById(R.id.answer);
+        back = (ImageButton) findViewById(R.id.back2);
 
         answer1 = (Button) findViewById(R.id.answer1);
         answer2 = (Button) findViewById(R.id.answer2);
         answer3 = (Button) findViewById(R.id.answer3);
         answer4 = (Button) findViewById(R.id.answer4);
 
+        timeLeftInMilliseconds = Long.valueOf(getIntent().getStringExtra("seconds"));
         startTimer();
         answer = newQuestion();
-        // checkTimer(String.valueOf(points));
 
+        // checks if the easy or hard mode was selected, and then displays relevant objects
+        if (getIntent().getStringExtra("difficulty").equals("easy")) {
+            answerText.setVisibility(View.GONE);
+            submit.setVisibility(View.GONE);
+        } else {
+            answer1.setVisibility(View.GONE);
+            answer2.setVisibility(View.GONE);
+            answer3.setVisibility(View.GONE);
+            answer4.setVisibility(View.GONE);
+        }
+
+        // creates a standardised onClickListener for the 4 quadrant answers
         View.OnClickListener answerButtonOnClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -69,9 +89,6 @@ public class StartActivity extends AppCompatActivity {
                 String result = (answer == answerSelected) ? "Correct +20" : "Incorrect -10";
 
                 score.setText(String.format("%d pts", points));
-                // score.setText(String.valueOf(answer));
-                // String check = (newQuestion() == answerSelected) ? "Correct!" : "Incorrect!";
-                // checkAnswer(check, stopTimer());
                 Toast.makeText(StartActivity.this, result, Toast.LENGTH_SHORT).show();
 
                 answer = newQuestion();
@@ -83,6 +100,37 @@ public class StartActivity extends AppCompatActivity {
         answer2.setOnClickListener(answerButtonOnClickListener);
         answer3.setOnClickListener(answerButtonOnClickListener);
         answer4.setOnClickListener(answerButtonOnClickListener);
+
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                back();
+            }
+        });
+
+        // same logic principle as the 4 quadrant mode
+        submit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                int answerSelected = Integer.valueOf(answerText.getText().toString());
+
+                points = (answer == answerSelected) ? (points + 20) : (points - 10);
+                correct = (answer == answerSelected) ? (correct + 1) : correct;
+                total++;
+
+                String mark = String.format("%d / %d correct", correct, total);
+
+                String result = (answer == answerSelected) ? "Correct +20" : "Incorrect -10";
+
+                score.setText(String.format("%d pts", points));
+                Toast.makeText(StartActivity.this, result, Toast.LENGTH_SHORT).show();
+
+                answer = newQuestion();
+                answerText.setText("");
+                checkTimer(String.valueOf(points), mark);
+            }
+        });
 
     }
 
@@ -100,8 +148,6 @@ public class StartActivity extends AppCompatActivity {
 
             }
         }.start();
-
-        //timerRunning = true;
     }
 
     public String stopTimer() {
@@ -112,10 +158,11 @@ public class StartActivity extends AppCompatActivity {
     public void updateTimer() {
         int seconds = (int) timeLeftInMilliseconds/1000;
 
-        String timeLeftText = (seconds<10) ? "0"+String.valueOf(seconds) : String.valueOf(seconds);
+        String timeLeftText = (seconds<10) ? ("0" + String.valueOf(seconds)) : String.valueOf(seconds);
         countDownText.setText(timeLeftText);
     }
 
+    // parameters to transport results and marks to the results page
     public void checkTimer(String x, String y) {
         int seconds = (int) timeLeftInMilliseconds/1000;
 
@@ -134,6 +181,7 @@ public class StartActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    // to refresh the questions without opening up a new intent
     public int newQuestion() {
         Random rand = new Random();
         String[] operators = {"+", "-", "x", "÷"};
@@ -144,7 +192,7 @@ public class StartActivity extends AppCompatActivity {
         int z = rand.nextInt(4);
         int[] result = {x+y, x-y, x*y, x/y};
 
-        String equation = String.format("%s %s %s", String.valueOf(x), operators[z], String.valueOf(y));
+        String equation = String.format("%s %s %s = ?", String.valueOf(x), operators[z], String.valueOf(y));
         question.setText(equation);
 
         int[] answers = {result[z], (result[z] + 1), (result[z] + 10), (result[z] - 5), (result[z] - 2)};
@@ -158,6 +206,7 @@ public class StartActivity extends AppCompatActivity {
         return result[z];
     }
 
+    // used to randomise the order of the quadrants
     public int[] shuffle(int[] numbers) {
         int temp;
         int k;
@@ -169,7 +218,11 @@ public class StartActivity extends AppCompatActivity {
             numbers[i] = numbers[k];
             numbers[k] = temp;
         }
-
         return numbers;
+    }
+
+    public void back() {
+        Intent intent = new Intent(StartActivity.this, MainActivity2.class);
+        startActivity(intent);
     }
 }
